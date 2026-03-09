@@ -121,9 +121,29 @@ export interface FunnelStage {
   label: string;
   userRate: number;
   benchmarkRate: number;
-  /** Benchmark − user rate, clamped ≥ 0. */
+  /**
+   * ActualRate / BenchmarkRate.
+   * Interpretation thresholds: ≥ 1.00 on-track, ≥ 0.85 mild, ≥ 0.70 warning, < 0.70 critical.
+   */
+  benchmarkDelta: number;
+  /** Benchmark − user rate, clamped ≥ 0 (percentage points). */
   gap: number;
-  /** Incremental revenue if this stage alone improved to benchmark (after guardrails). */
+  /** Volume entering this conversion stage. */
+  currentStageVolume: number;
+  /**
+   * Lost next-stage conversions from the gap.
+   * = max(0, recoverableGap / 100) × currentStageVolume
+   * where recoverableGap = gap × benchmarkGapRecoveryLimit (50%).
+   */
+  lostNextStage: number;
+  /**
+   * Product of actual rates (as decimals) for all stages downstream of this one.
+   * Represents the fraction of next-stage volume that reaches the terminal stage.
+   */
+  downstreamYield: number;
+  /** lostNextStage × downstreamYield — recovered final conversions if gap is closed. */
+  recoverableFinalConversions: number;
+  /** recoverableFinalConversions × revenuePerConversion (before recovery cap). */
   revenueAtRisk: number;
   status: StageStatus;
 }
