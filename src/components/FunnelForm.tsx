@@ -13,7 +13,7 @@ import {
   getDefaultInputs,
   TRAFFIC_BOUNDS,
 } from '@/lib/benchmarks';
-import { formatNumber, formatPercent, clamp } from '@/utils/format';
+import { formatPercent, clamp } from '@/utils/format';
 
 // ---- Types ----------------------------------------------------------------
 

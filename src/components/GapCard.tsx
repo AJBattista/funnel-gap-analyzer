@@ -41,14 +41,15 @@ export default function GapCard({ stage, isLargestLeak }: GapCardProps) {
 
   return (
     <div
-      className="rounded-lg border bg-[#1c1f2e] p-4 relative"
+      className="rounded-lg border bg-[#1c1f2e] p-4 relative hover:bg-[#1e2133] transition-colors"
       style={{
         borderColor: isLargestLeak ? '#d94a4a' : 'rgba(255,255,255,0.06)',
+        paddingTop: isLargestLeak ? '1.25rem' : undefined,
       }}
     >
       {/* Largest leak badge */}
       {isLargestLeak && (
-        <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-[#d94a4a] text-white text-[10px] font-semibold uppercase tracking-wide rounded">
+        <div className="absolute -top-2.5 left-3 px-2 py-0.5 bg-[#d94a4a] text-white text-[10px] font-semibold uppercase tracking-wider rounded">
           Largest Revenue Leak
         </div>
       )}

@@ -41,7 +41,7 @@ export default function PriorityCard({ analysis, inputs }: PriorityCardProps) {
   // No leaks state
   if (!largestLeak) {
     return (
-      <div className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-6 mb-8">
+      <div className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-6">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-[#3daa8c]" />
           <h2 className="text-lg font-semibold text-[#e8eaf0]">
@@ -62,56 +62,57 @@ export default function PriorityCard({ analysis, inputs }: PriorityCardProps) {
       : null;
 
   return (
-    <div className="space-y-6 mb-8">
-      {/* Top summary cards row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-6">
+      {/* Hero summary — most prominent element */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Largest Revenue Leak */}
-        <div className="rounded-lg border border-[#d94a4a]/30 bg-[#1c1f2e] p-5">
-          <div className="text-[10px] uppercase tracking-wide text-[#d94a4a] font-semibold mb-2">
+        <div className="rounded-lg border border-[#d94a4a]/30 bg-gradient-to-br from-[#1c1f2e] to-[#1e1520] p-6 sm:p-7">
+          <div className="text-[10px] uppercase tracking-widest text-[#d94a4a] font-semibold mb-3">
             Largest Revenue Leak
           </div>
-          <div className="text-base font-semibold text-[#e8eaf0] mb-1">
+          <div className="text-lg font-semibold text-[#e8eaf0] mb-2">
             {largestLeak.label}
           </div>
-          <div className="text-2xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#d94a4a]">
+          <div className="text-3xl sm:text-4xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#d94a4a] mb-1">
             {formatCurrency(largestLeak.revenueAtRisk)}
-            <span className="text-sm text-[#8a8fa8] font-normal">/mo at risk</span>
+            <span className="text-sm text-[#8a8fa8] font-normal ml-1">/mo at risk</span>
           </div>
-          <div className="text-xs text-[#8a8fa8] mt-2">
+          <div className="text-xs text-[#8a8fa8] mt-3 leading-relaxed">
             {generateLeakSummary(largestLeak)}
           </div>
         </div>
 
         {/* Best Next Fix */}
-        <div className="rounded-lg border border-[#3daa8c]/30 bg-[#1c1f2e] p-5">
-          <div className="text-[10px] uppercase tracking-wide text-[#3daa8c] font-semibold mb-2">
+        <div className="rounded-lg border border-[#3daa8c]/30 bg-gradient-to-br from-[#1c1f2e] to-[#152018] p-6 sm:p-7">
+          <div className="text-[10px] uppercase tracking-widest text-[#3daa8c] font-semibold mb-3">
             Best Next Fix
           </div>
           {bestNextFix && (
             <>
-              <div className="text-base font-semibold text-[#e8eaf0] mb-1">
+              <div className="text-lg font-semibold text-[#e8eaf0] mb-2">
                 {bestNextFix.label}
               </div>
-              <div className="text-xs text-[#8a8fa8] leading-relaxed">
+              <div className="text-sm text-[#8a8fa8] leading-relaxed">
                 {recommendation}
               </div>
             </>
           )}
         </div>
+      </div>
 
-        {/* Projected Revenue Recovery */}
-        <div className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-5">
-          <div className="text-[10px] uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+      {/* Projected Revenue Recovery — secondary prominence */}
+      <div className="rounded-lg border border-[#3daa8c]/20 bg-[#1c1f2e] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-widest text-[#8a8fa8] font-semibold mb-1">
             Projected Revenue Recovery
           </div>
-          <div className="text-2xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#3daa8c]">
-            {formatCurrency(projectedRecovery)}
-            <span className="text-sm text-[#8a8fa8] font-normal">/mo</span>
+          <div className="text-xs text-[#8a8fa8]">
+            Theoretical maximum if all stages reach benchmark.
           </div>
-          <div className="text-xs text-[#8a8fa8] mt-2">
-            Theoretical maximum if all stages reach benchmark. Individual
-            improvements compound, so actual recovery may be lower.
-          </div>
+        </div>
+        <div className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#3daa8c] whitespace-nowrap">
+          +{formatCurrency(projectedRecovery)}
+          <span className="text-sm text-[#8a8fa8] font-normal ml-1">/mo</span>
         </div>
       </div>
 

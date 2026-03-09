@@ -19,6 +19,15 @@ html,
 body {
   background: var(--color-bg-page);
   color: var(--color-text-primary);
+  font-feature-settings: 'tnum';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(74, 144, 217, 0.3);
+  color: #e8eaf0;
 }
 
 /* Range slider thumb styling */
@@ -40,6 +49,12 @@ input[type='range']::-moz-range-thumb {
   background: #3daa8c;
   cursor: pointer;
   border: 2px solid #232738;
+}
+
+/* Smooth transitions for interactive elements */
+button,
+input {
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 @layer utilities {

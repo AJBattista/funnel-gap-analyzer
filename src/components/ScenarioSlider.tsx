@@ -77,7 +77,7 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
       : 0;
 
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-5 mb-8">
+    <div className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-5">
       <h3 className="text-sm font-semibold text-[#e8eaf0] mb-4">
         Scenario Explorer
       </h3>
@@ -93,7 +93,7 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
             <button
               key={stage.key}
               onClick={() => handleStageChange(stage.key)}
-              className="px-3 py-1.5 rounded text-xs font-medium transition-colors"
+              className="px-3 py-1.5 rounded text-xs font-medium transition-colors hover:bg-[#232738] hover:text-[#e8eaf0]"
               style={{
                 backgroundColor: isSelected ? '#232738' : 'transparent',
                 color: isSelected ? '#e8eaf0' : '#8a8fa8',

@@ -22,15 +22,15 @@ export default function Dashboard({ analysis, inputs }: DashboardProps) {
   const hasLeaks = analysis.largestLeak !== null;
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-10">
+      {/* Section: Priority Recommendation + Rankings + Confidence — MOST PROMINENT */}
+      <PriorityCard analysis={analysis} inputs={inputs} />
+
       {/* Section: Funnel Overview */}
       <FunnelSummary analysis={analysis} inputs={inputs} />
 
-      {/* Section: Priority Recommendation + Rankings + Confidence */}
-      <PriorityCard analysis={analysis} inputs={inputs} />
-
       {/* Section: Benchmark Delta by Stage */}
-      <div className="mb-8">
+      <div>
         <h2 className="text-lg font-semibold text-[#e8eaf0] mb-4">
           Benchmark Delta by Stage
         </h2>
@@ -75,7 +75,7 @@ function RevenueAtRiskRanking({ analysis }: { analysis: AnalysisResult }) {
   };
 
   return (
-    <div className="mb-8">
+    <div>
       <h2 className="text-lg font-semibold text-[#e8eaf0] mb-4">
         Revenue at Risk by Stage
       </h2>

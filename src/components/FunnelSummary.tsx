@@ -36,7 +36,7 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
   const orderedStages = template.stages;
 
   return (
-    <div className="mb-8">
+    <div>
       <h2 className="text-lg font-semibold text-[#e8eaf0] mb-4">
         Funnel Overview
       </h2>
@@ -44,10 +44,6 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
       {/* Horizontal flow */}
       <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
         {volumes.map((vol, i) => {
-          // volumes[0] is top-of-funnel, volumes[i>0] is output of orderedStages[i-1]
-          const feedingStage = i > 0 ? stageByKey.get(orderedStages[i - 1]?.key) ?? null : null;
-          const color = feedingStage ? statusColor(feedingStage) : '#4a90d9';
-
           // Outbound stage: orderedStages[i] converts FROM this volume level to the next
           const outboundStage = i < orderedStages.length ? stageByKey.get(orderedStages[i].key) ?? null : null;
 
@@ -58,14 +54,11 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
                 className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] px-4 py-3 min-w-[120px] text-center"
               >
                 <div className="text-xs text-[#8a8fa8] mb-1">{vol.label}</div>
-                <div
-                  className="text-xl font-semibold font-[family-name:var(--font-geist-mono)]"
-                  style={{ color }}
-                >
+                <div className="text-xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#e8eaf0]">
                   {formatNumber(vol.value)}
                 </div>
                 {outboundStage && (
-                  <div className="text-xs text-[#8a8fa8] mt-1">
+                  <div className="text-xs mt-1">
                     <span
                       className="font-[family-name:var(--font-geist-mono)]"
                       style={{ color: statusColor(outboundStage) }}
