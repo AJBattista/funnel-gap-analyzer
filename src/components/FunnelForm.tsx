@@ -5,7 +5,7 @@
 //              validation, guardrail visual feedback, and live analysis trigger
 // ---------------------------------------------------------------------------
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { TemplateId, FunnelInputs, FunnelTemplate } from '@/lib/types';
 import {
   TEMPLATE_ORDER,
@@ -193,8 +193,12 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
   const [errors, setErrors] = useState<FieldError[]>([]);
   const [guardrailHits, setGuardrailHits] = useState<GuardrailHit[]>([]);
 
-  // ---- Sync displays when template changes ----
+  // ---- Sync displays only when the template changes (not on every field edit) ----
+  const prevTemplateIdRef = useRef(inputs.templateId);
   useEffect(() => {
+    if (prevTemplateIdRef.current === inputs.templateId) return;
+    prevTemplateIdRef.current = inputs.templateId;
+
     setVisitorsDisplay(formatDisplayNumber(inputs.visitors));
     setRevenueDisplay(formatDisplayCurrency(inputs.revenuePerConversion));
     const displays: Record<string, string> = {};
@@ -252,7 +256,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
   function handleVisitorsBlur() {
     const val = parseNumericInput(visitorsDisplay);
     const clamped = clamp(Math.round(val), 0, 100_000_000);
-    setVisitorsDisplay(formatDisplayNumber(clamped));
+    setVisitorsDisplay(clamped > 0 ? formatDisplayNumber(clamped) : '');
 
     const newErrors = errors.filter((e) => e.field !== 'visitors');
     if (val < 0 || val > 100_000_000) {
@@ -272,7 +276,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
   function handleRevenueBlur() {
     const val = parseNumericInput(revenueDisplay);
     const clamped = clamp(Math.round(val), 0, 10_000_000);
-    setRevenueDisplay(formatDisplayCurrency(clamped));
+    setRevenueDisplay(clamped > 0 ? formatDisplayCurrency(clamped) : '');
 
     const newErrors = errors.filter((e) => e.field !== 'revenuePerConversion');
     if (val < 0 || val > 10_000_000) {
@@ -293,7 +297,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
   function handleRateBlur(key: string) {
     const val = parseNumericInput(rateDisplays[key] ?? '0');
     const clamped = clamp(parseFloat(val.toFixed(1)), 0, 100);
-    setRateDisplays((prev) => ({ ...prev, [key]: formatDisplayRate(clamped) }));
+    setRateDisplays((prev) => ({ ...prev, [key]: clamped > 0 ? formatDisplayRate(clamped) : '' }));
 
     const newErrors = errors.filter((e) => e.field !== key);
     if (val < 0 || val > 100) {
@@ -317,7 +321,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
     const rounded = Math.max(0, Math.round(val));
     setVolumeValues((prev) => ({
       ...prev,
-      [label]: formatDisplayNumber(rounded),
+      [label]: rounded > 0 ? formatDisplayNumber(rounded) : '',
     }));
 
     // Derive rates from all current volume values and update
@@ -575,7 +579,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
             onBlur={handleVisitorsBlur}
             onFocus={() => {
               const val = parseNumericInput(visitorsDisplay);
-              if (val > 0) setVisitorsDisplay(String(Math.round(val)));
+              setVisitorsDisplay(val > 0 ? String(Math.round(val)) : '');
             }}
             className={`${inputBaseClass} ${fieldBorder('visitors')}`}
             placeholder="10,000"
@@ -606,7 +610,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
               onBlur={handleRevenueBlur}
               onFocus={() => {
                 const val = parseNumericInput(revenueDisplay);
-                if (val > 0) setRevenueDisplay(String(Math.round(val)));
+                setRevenueDisplay(val > 0 ? String(Math.round(val)) : '');
               }}
               className={`${inputBaseClass} ${fieldBorder('revenuePerConversion')} pl-7`}
               placeholder="5,000"
@@ -642,17 +646,15 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={rateDisplays[stage.key] ?? '0.0'}
+                      value={rateDisplays[stage.key] ?? ''}
                       onChange={(e) => handleRateChange(stage.key, e.target.value)}
                       onBlur={() => handleRateBlur(stage.key)}
                       onFocus={() => {
                         const val = parseFloat(rateDisplays[stage.key] ?? '0');
-                        if (!isNaN(val)) {
-                          setRateDisplays((prev) => ({
-                            ...prev,
-                            [stage.key]: String(val),
-                          }));
-                        }
+                        setRateDisplays((prev) => ({
+                          ...prev,
+                          [stage.key]: !isNaN(val) && val > 0 ? String(val) : '',
+                        }));
                       }}
                       className={`${inputBaseClass} ${fieldBorder(stage.key)} pr-7`}
                     />
@@ -694,12 +696,10 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
                   onBlur={() => handleVolumeBlur(label)}
                   onFocus={() => {
                     const val = parseNumericInput(volumeValues[label] ?? '0');
-                    if (val > 0) {
-                      setVolumeValues((prev) => ({
-                        ...prev,
-                        [label]: String(Math.round(val)),
-                      }));
-                    }
+                    setVolumeValues((prev) => ({
+                      ...prev,
+                      [label]: val > 0 ? String(Math.round(val)) : '',
+                    }));
                   }}
                   className={`${inputBaseClass} ${inputBorderNormal}`}
                 />
