@@ -393,7 +393,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
   }
 
   const inputBaseClass =
-    'w-full bg-[#141720] border rounded-lg px-3 py-2.5 text-sm text-[#e8eaf0] font-[family-name:var(--font-geist-mono)] outline-none transition-colors focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/30';
+    'w-full bg-[#141720] border rounded-lg px-3 py-3 text-sm text-[#e8eaf0] font-[family-name:var(--font-geist-mono)] outline-none transition-colors focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/30 min-h-[44px]';
   const inputBorderNormal = 'border-white/[0.1]';
   const inputBorderError = 'border-[#d94a4a]';
   const inputBorderWarn = 'border-[#d4a24e]';
@@ -569,7 +569,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
           </label>
           <input
             type="text"
-            inputMode="numeric"
+            inputMode="decimal"
             value={visitorsDisplay}
             onChange={(e) => handleVisitorsChange(e.target.value)}
             onBlur={handleVisitorsBlur}
@@ -600,7 +600,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
             </span>
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="decimal"
               value={revenueDisplay}
               onChange={(e) => handleRevenueChange(e.target.value)}
               onBlur={handleRevenueBlur}
@@ -688,7 +688,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
                 </label>
                 <input
                   type="text"
-                  inputMode="numeric"
+                  inputMode="decimal"
                   value={volumeValues[label] ?? ''}
                   onChange={(e) => handleVolumeChange(label, e.target.value)}
                   onBlur={() => handleVolumeBlur(label)}
