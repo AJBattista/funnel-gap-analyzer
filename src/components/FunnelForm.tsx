@@ -1,5 +1,10 @@
 'use client';
 
+// ---------------------------------------------------------------------------
+// FunnelForm — Input form with template selector, volume/rate mode toggle,
+//              validation, guardrail visual feedback, and live analysis trigger
+// ---------------------------------------------------------------------------
+
 import { useState, useCallback, useEffect } from 'react';
 import type { TemplateId, FunnelInputs, FunnelTemplate } from '@/lib/types';
 import {
@@ -8,19 +13,18 @@ import {
   getDefaultInputs,
   TRAFFIC_BOUNDS,
 } from '@/lib/benchmarks';
-import { clamp } from '@/utils/format';
+import { formatPercent, clamp } from '@/utils/format';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// ---- Types ----------------------------------------------------------------
 
 type InputMode = 'rates' | 'volumes';
 type TimePeriod = 'monthly' | 'weekly' | 'quarterly';
 type TrafficSource = '' | 'organic' | 'paid' | 'mixed';
 
 interface FunnelFormProps {
+  inputs: FunnelInputs;
   onSubmit: (inputs: FunnelInputs) => void;
-  initialInputs?: FunnelInputs;
+  onChange: (inputs: FunnelInputs) => void;
 }
 
 interface FieldError {
@@ -28,9 +32,13 @@ interface FieldError {
   message: string;
 }
 
-// ---------------------------------------------------------------------------
-// Template selector card data
-// ---------------------------------------------------------------------------
+interface GuardrailHit {
+  field: string;
+  message: string;
+  level: 'floor' | 'ceiling';
+}
+
+// ---- Template display data ------------------------------------------------
 
 const TEMPLATE_DISPLAY: Record<
   TemplateId,
@@ -52,13 +60,11 @@ const TEMPLATE_DISPLAY: Record<
   'creator-info': { icon: '🎓', shortName: 'Creator / Info' },
 };
 
-// B2B SaaS IDs for sub-mode selector
 const B2B_SAAS_IDS: TemplateId[] = ['b2b-saas-leadgen', 'b2b-saas-trial'];
 const NON_B2B_IDS: TemplateId[] = TEMPLATE_ORDER.filter(
   (id) => !B2B_SAAS_IDS.includes(id),
 );
 
-// Funnel type groups for the selector
 type FunnelCategory = 'b2b-saas' | TemplateId;
 
 function templateIdToCategory(id: TemplateId): FunnelCategory {
@@ -66,12 +72,10 @@ function templateIdToCategory(id: TemplateId): FunnelCategory {
   return id;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// ---- Helpers --------------------------------------------------------------
 
-function parseNumericInput(value: string): number {
-  const cleaned = value.replace(/[^0-9.\-]/g, '');
+function parseNumericInput(raw: string): number {
+  const cleaned = raw.replace(/[$,%\s,]/g, '');
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 }
@@ -90,7 +94,6 @@ function formatDisplayCurrency(value: number): string {
 
 /**
  * Given volume inputs for each funnel level, derive conversion rates.
- * volumes[0] = visitors, volumes[i+1] = output of stage i.
  */
 function deriveRatesFromVolumes(
   template: FunnelTemplate,
@@ -99,7 +102,6 @@ function deriveRatesFromVolumes(
   const rates: Record<string, number> = {};
   const { stages } = template;
 
-  // Build ordered volume keys: fromLabel of stage 0, then toLabel of each stage
   const volumeKeys = [
     stages[0]?.fromLabel ?? 'Visitors',
     ...stages.map((s) => s.toLabel),
@@ -140,290 +142,267 @@ function deriveVolumesFromRates(
   return volumes;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+// ---- Component ------------------------------------------------------------
 
-export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps) {
-  // ---- Core state ----
-  const defaultTemplate: TemplateId = initialInputs?.templateId ?? 'b2b-saas-leadgen';
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>(defaultTemplate);
+export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormProps) {
+  const template = getTemplate(inputs.templateId);
+
+  // ---- Category / template state ----
   const [selectedCategory, setSelectedCategory] = useState<FunnelCategory>(
-    templateIdToCategory(defaultTemplate),
+    templateIdToCategory(inputs.templateId),
   );
 
-  const template = getTemplate(selectedTemplate);
-  const defaults = getDefaultInputs(selectedTemplate);
-
-  // Form values
-  const [visitors, setVisitors] = useState<string>(
-    formatDisplayNumber(initialInputs?.visitors ?? defaults.visitors),
-  );
-  const [rates, setRates] = useState<Record<string, string>>(() => {
-    const initial = initialInputs?.rates ?? defaults.rates;
-    const result: Record<string, string> = {};
-    for (const stage of template.stages) {
-      result[stage.key] = formatDisplayRate(initial[stage.key] ?? 0);
-    }
-    return result;
-  });
-  const [revenuePerConversion, setRevenuePerConversion] = useState<string>(
-    formatDisplayCurrency(
-      initialInputs?.revenuePerConversion ?? defaults.revenuePerConversion,
-    ),
-  );
-
-  // Volume mode values
-  const [volumeValues, setVolumeValues] = useState<Record<string, string>>(() => {
-    const vols = deriveVolumesFromRates(
-      template,
-      initialInputs?.visitors ?? defaults.visitors,
-      initialInputs?.rates ?? defaults.rates,
-    );
-    const result: Record<string, string> = {};
-    for (const [k, v] of Object.entries(vols)) {
-      result[k] = formatDisplayNumber(v);
-    }
-    return result;
-  });
-
-  // ---- Optional fields ----
+  // ---- Input mode state ----
   const [inputMode, setInputMode] = useState<InputMode>('rates');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [trafficSource, setTrafficSource] = useState<TrafficSource>('');
-  // benchmarkMode is always 'industry-median' — shown as static display
   const benchmarkModeLabel = 'Industry Median';
 
-  // ---- Validation ----
-  const [errors, setErrors] = useState<FieldError[]>([]);
-  const [touched, setTouched] = useState<Set<string>>(new Set());
-
-  // ---- Template change → re-populate defaults ----
-  const handleTemplateChange = useCallback(
-    (newId: TemplateId) => {
-      setSelectedTemplate(newId);
-      const newTemplate = getTemplate(newId);
-      const newDefaults = getDefaultInputs(newId);
-
-      setVisitors(formatDisplayNumber(newDefaults.visitors));
-
-      const newRates: Record<string, string> = {};
-      for (const stage of newTemplate.stages) {
-        newRates[stage.key] = formatDisplayRate(
-          newDefaults.rates[stage.key] ?? 0,
-        );
+  // ---- Display strings ----
+  const [visitorsDisplay, setVisitorsDisplay] = useState(
+    formatDisplayNumber(inputs.visitors),
+  );
+  const [revenueDisplay, setRevenueDisplay] = useState(
+    formatDisplayCurrency(inputs.revenuePerConversion),
+  );
+  const [rateDisplays, setRateDisplays] = useState<Record<string, string>>(
+    () => {
+      const displays: Record<string, string> = {};
+      for (const stage of template.stages) {
+        displays[stage.key] = formatDisplayRate(inputs.rates[stage.key] ?? 0);
       }
-      setRates(newRates);
-
-      setRevenuePerConversion(
-        formatDisplayCurrency(newDefaults.revenuePerConversion),
-      );
-
-      // Reset volume values
-      const vols = deriveVolumesFromRates(
-        newTemplate,
-        newDefaults.visitors,
-        newDefaults.rates,
-      );
-      const volStrings: Record<string, string> = {};
-      for (const [k, v] of Object.entries(vols)) {
-        volStrings[k] = formatDisplayNumber(v);
-      }
-      setVolumeValues(volStrings);
-
-      setErrors([]);
-      setTouched(new Set());
+      return displays;
     },
-    [],
+  );
+  const [volumeValues, setVolumeValues] = useState<Record<string, string>>(
+    () => {
+      const vols = deriveVolumesFromRates(
+        template,
+        inputs.visitors,
+        inputs.rates,
+      );
+      const result: Record<string, string> = {};
+      for (const [k, v] of Object.entries(vols)) {
+        result[k] = formatDisplayNumber(v);
+      }
+      return result;
+    },
   );
 
-  // When category changes, select the appropriate template
+  // ---- Validation & guardrails ----
+  const [errors, setErrors] = useState<FieldError[]>([]);
+  const [guardrailHits, setGuardrailHits] = useState<GuardrailHit[]>([]);
+
+  // ---- Sync displays when template changes ----
+  useEffect(() => {
+    setVisitorsDisplay(formatDisplayNumber(inputs.visitors));
+    setRevenueDisplay(formatDisplayCurrency(inputs.revenuePerConversion));
+    const displays: Record<string, string> = {};
+    for (const stage of template.stages) {
+      displays[stage.key] = formatDisplayRate(inputs.rates[stage.key] ?? 0);
+    }
+    setRateDisplays(displays);
+
+    const vols = deriveVolumesFromRates(template, inputs.visitors, inputs.rates);
+    const volStrings: Record<string, string> = {};
+    for (const [k, v] of Object.entries(vols)) {
+      volStrings[k] = formatDisplayNumber(v);
+    }
+    setVolumeValues(volStrings);
+
+    setErrors([]);
+    setGuardrailHits([]);
+    setSelectedCategory(templateIdToCategory(inputs.templateId));
+  }, [inputs.templateId, template, inputs.visitors, inputs.revenuePerConversion, inputs.rates]);
+
+  // ---- Template change ----
+  function handleTemplateChange(id: TemplateId) {
+    const defaults = getDefaultInputs(id);
+    onChange(defaults);
+  }
+
   const handleCategoryChange = useCallback(
     (cat: FunnelCategory) => {
       setSelectedCategory(cat);
       if (cat === 'b2b-saas') {
-        // Default to lead-gen if coming from outside B2B
-        if (!B2B_SAAS_IDS.includes(selectedTemplate)) {
-          handleTemplateChange('b2b-saas-leadgen');
+        if (!B2B_SAAS_IDS.includes(inputs.templateId)) {
+          const defaults = getDefaultInputs('b2b-saas-leadgen');
+          onChange(defaults);
         }
       } else {
-        handleTemplateChange(cat as TemplateId);
+        const defaults = getDefaultInputs(cat as TemplateId);
+        onChange(defaults);
       }
     },
-    [selectedTemplate, handleTemplateChange],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [inputs.templateId, onChange],
   );
 
-  const handleB2bSubModeChange = useCallback(
-    (id: TemplateId) => {
-      handleTemplateChange(id);
-    },
-    [handleTemplateChange],
-  );
+  // ---- Field change handlers ----
 
-  // ---- Sync input mode ----
-  // When switching from volumes to rates, derive rates from current volumes
-  useEffect(() => {
-    if (inputMode === 'rates') {
-      // Derive rates from volume values if volumes were edited
-      // Actually, keep rates as-is since user may not have been in volume mode
-    }
-  }, [inputMode]);
+  function updateInputs(partial: Partial<FunnelInputs>) {
+    const updated = { ...inputs, ...partial };
+    onChange(updated);
+  }
 
-  // ---- Validation ----
-  const validate = useCallback((): FieldError[] => {
-    const errs: FieldError[] = [];
-    const visitorsNum = parseNumericInput(visitors);
+  function handleVisitorsChange(raw: string) {
+    setVisitorsDisplay(raw);
+  }
 
-    if (visitorsNum < TRAFFIC_BOUNDS.min) {
-      errs.push({
+  function handleVisitorsBlur() {
+    const val = parseNumericInput(visitorsDisplay);
+    const clamped = clamp(Math.round(val), 0, 100_000_000);
+    setVisitorsDisplay(formatDisplayNumber(clamped));
+
+    const newErrors = errors.filter((e) => e.field !== 'visitors');
+    if (val < 0 || val > 100_000_000) {
+      newErrors.push({
         field: 'visitors',
-        message: `Minimum ${TRAFFIC_BOUNDS.min.toLocaleString()} visitors`,
+        message: 'Must be between 0 and 100,000,000',
       });
     }
-    if (visitorsNum > TRAFFIC_BOUNDS.max) {
-      errs.push({
-        field: 'visitors',
-        message: `Maximum ${TRAFFIC_BOUNDS.max.toLocaleString()} visitors`,
-      });
-    }
+    setErrors(newErrors);
+    updateInputs({ visitors: clamped });
+  }
 
-    if (inputMode === 'rates') {
-      for (const stage of template.stages) {
-        const rateVal = parseFloat(rates[stage.key] ?? '0');
-        const guard = template.stageGuardrails[stage.key];
-        if (guard) {
-          if (rateVal < 0 || rateVal > 100) {
-            errs.push({
-              field: stage.key,
-              message: 'Rate must be 0–100%',
-            });
-          }
-        }
-      }
-    }
+  function handleRevenueChange(raw: string) {
+    setRevenueDisplay(raw);
+  }
 
-    const revVal = parseNumericInput(revenuePerConversion);
-    if (revVal < 0) {
-      errs.push({ field: 'revenuePerConversion', message: 'Must be $0 or more' });
-    }
-    if (revVal > 10_000_000) {
-      errs.push({
+  function handleRevenueBlur() {
+    const val = parseNumericInput(revenueDisplay);
+    const clamped = clamp(Math.round(val), 0, 10_000_000);
+    setRevenueDisplay(formatDisplayCurrency(clamped));
+
+    const newErrors = errors.filter((e) => e.field !== 'revenuePerConversion');
+    if (val < 0 || val > 10_000_000) {
+      newErrors.push({
         field: 'revenuePerConversion',
-        message: 'Maximum $10,000,000',
+        message: 'Must be between $0 and $10,000,000',
       });
     }
+    setErrors(newErrors);
+    checkRevenueGuardrails(clamped, template);
+    updateInputs({ revenuePerConversion: clamped });
+  }
 
-    return errs;
-  }, [visitors, rates, revenuePerConversion, template, inputMode]);
+  function handleRateChange(key: string, raw: string) {
+    setRateDisplays((prev) => ({ ...prev, [key]: raw }));
+  }
 
-  const getError = (field: string): string | undefined => {
-    if (!touched.has(field)) return undefined;
-    return errors.find((e) => e.field === field)?.message;
-  };
+  function handleRateBlur(key: string) {
+    const val = parseNumericInput(rateDisplays[key] ?? '0');
+    const clamped = clamp(parseFloat(val.toFixed(1)), 0, 100);
+    setRateDisplays((prev) => ({ ...prev, [key]: formatDisplayRate(clamped) }));
 
-  const handleBlur = (field: string) => {
-    setTouched((prev) => new Set(prev).add(field));
-    setErrors(validate());
-  };
-
-  // ---- Build FunnelInputs & submit ----
-  const handleSubmit = () => {
-    // Mark all fields as touched
-    const allFields = new Set<string>([
-      'visitors',
-      'revenuePerConversion',
-      ...template.stages.map((s) => s.key),
-    ]);
-    setTouched(allFields);
-
-    const errs = validate();
-    setErrors(errs);
-    if (errs.length > 0) return;
-
-    const visitorsNum = parseNumericInput(visitors);
-    const revNum = parseNumericInput(revenuePerConversion);
-
-    let finalRates: Record<string, number>;
-
-    if (inputMode === 'volumes') {
-      // Derive rates from volumes
-      const numericVolumes: Record<string, number> = {};
-      for (const [k, v] of Object.entries(volumeValues)) {
-        numericVolumes[k] = parseNumericInput(v);
-      }
-      finalRates = deriveRatesFromVolumes(template, numericVolumes);
-    } else {
-      finalRates = {};
-      for (const stage of template.stages) {
-        finalRates[stage.key] = parseFloat(rates[stage.key] ?? '0');
-      }
+    const newErrors = errors.filter((e) => e.field !== key);
+    if (val < 0 || val > 100) {
+      newErrors.push({ field: key, message: 'Must be between 0% and 100%' });
     }
+    setErrors(newErrors);
+    checkRateGuardrails(key, clamped, template);
 
-    // Clamp to guardrail bounds
-    for (const stage of template.stages) {
-      const guard = template.stageGuardrails[stage.key];
-      if (guard) {
-        finalRates[stage.key] = clamp(
-          finalRates[stage.key],
-          guard.rateFloor,
-          guard.rateCeiling,
-        );
-      } else {
-        finalRates[stage.key] = clamp(finalRates[stage.key], 0, 100);
-      }
-    }
+    const newRates = { ...inputs.rates, [key]: clamped };
+    updateInputs({ rates: newRates });
+  }
 
-    const inputs: FunnelInputs = {
-      templateId: selectedTemplate,
-      visitors: clamp(visitorsNum, TRAFFIC_BOUNDS.min, TRAFFIC_BOUNDS.max),
-      rates: finalRates,
-      revenuePerConversion: Math.max(0, revNum),
-    };
+  // ---- Volume mode handlers ----
 
-    onSubmit(inputs);
-  };
-
-  // ---- Rate field handlers ----
-  const handleRateChange = (key: string, value: string) => {
-    setRates((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleRateBlur = (key: string) => {
-    handleBlur(key);
-    // Format on blur
-    const val = parseFloat(rates[key] ?? '0');
-    if (!isNaN(val)) {
-      const clamped = clamp(val, 0, 100);
-      setRates((prev) => ({ ...prev, [key]: formatDisplayRate(clamped) }));
-    }
-  };
-
-  // ---- Volume field handlers ----
-  const handleVolumeChange = (label: string, value: string) => {
+  function handleVolumeChange(label: string, value: string) {
     setVolumeValues((prev) => ({ ...prev, [label]: value }));
-  };
+  }
 
-  const handleVolumeBlur = (label: string) => {
+  function handleVolumeBlur(label: string) {
     const val = parseNumericInput(volumeValues[label] ?? '0');
+    const rounded = Math.max(0, Math.round(val));
     setVolumeValues((prev) => ({
       ...prev,
-      [label]: formatDisplayNumber(Math.max(0, Math.round(val))),
+      [label]: formatDisplayNumber(rounded),
     }));
-  };
 
-  // ---- Visitors field handlers ----
-  const handleVisitorsBlur = () => {
-    handleBlur('visitors');
-    const val = parseNumericInput(visitors);
-    setVisitors(formatDisplayNumber(Math.max(0, Math.round(val))));
-  };
+    // Derive rates from all current volume values and update
+    const numericVolumes: Record<string, number> = {};
+    for (const [k, v] of Object.entries(volumeValues)) {
+      numericVolumes[k] = k === label ? rounded : parseNumericInput(v);
+    }
+    const derivedRates = deriveRatesFromVolumes(template, numericVolumes);
 
-  // ---- Revenue field handlers ----
-  const handleRevenueBlur = () => {
-    handleBlur('revenuePerConversion');
-    const val = parseNumericInput(revenuePerConversion);
-    setRevenuePerConversion(formatDisplayCurrency(Math.max(0, val)));
-  };
+    // Top-of-funnel volume is visitors
+    const firstLabel = template.stages[0]?.fromLabel ?? 'Visitors';
+    const newVisitors = label === firstLabel ? rounded : parseNumericInput(volumeValues[firstLabel] ?? '0');
+
+    updateInputs({ visitors: newVisitors, rates: derivedRates });
+  }
+
+  // ---- Guardrail checks ----
+
+  function checkRateGuardrails(key: string, value: number, tmpl: FunnelTemplate) {
+    const guard = tmpl.stageGuardrails[key];
+    const newHits = guardrailHits.filter((h) => h.field !== key);
+    if (guard) {
+      if (value < guard.rateFloor) {
+        newHits.push({
+          field: key,
+          message: `Below plausible floor (${guard.rateFloor.toFixed(1)}%)`,
+          level: 'floor',
+        });
+      } else if (value > guard.rateCeiling) {
+        newHits.push({
+          field: key,
+          message: `Above plausible ceiling (${guard.rateCeiling.toFixed(1)}%)`,
+          level: 'ceiling',
+        });
+      }
+    }
+    setGuardrailHits(newHits);
+  }
+
+  function checkRevenueGuardrails(value: number, tmpl: FunnelTemplate) {
+    const guard = tmpl.revenuePerConversion;
+    const newHits = guardrailHits.filter((h) => h.field !== 'revenuePerConversion');
+    if (value > 0 && value < guard.floor) {
+      newHits.push({
+        field: 'revenuePerConversion',
+        message: `Below typical floor ($${guard.floor.toLocaleString()})`,
+        level: 'floor',
+      });
+    } else if (value > guard.ceiling) {
+      newHits.push({
+        field: 'revenuePerConversion',
+        message: `Above typical ceiling ($${guard.ceiling.toLocaleString()})`,
+        level: 'ceiling',
+      });
+    }
+    setGuardrailHits(newHits);
+  }
+
+  // ---- Submit ----
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (errors.length > 0) return;
+    onSubmit(inputs);
+  }
+
+  // ---- Render helpers ----
+  function getFieldError(field: string): string | undefined {
+    return errors.find((e) => e.field === field)?.message;
+  }
+
+  function getGuardrailHit(field: string): GuardrailHit | undefined {
+    return guardrailHits.find((h) => h.field === field);
+  }
+
+  const inputBaseClass =
+    'w-full bg-[#141720] border rounded-lg px-3 py-2.5 text-sm text-[#e8eaf0] font-[family-name:var(--font-geist-mono)] outline-none transition-colors focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/30';
+  const inputBorderNormal = 'border-white/[0.1]';
+  const inputBorderError = 'border-[#d94a4a]';
+  const inputBorderWarn = 'border-[#d4a24e]';
+
+  function fieldBorder(field: string): string {
+    if (getFieldError(field)) return inputBorderError;
+    if (getGuardrailHit(field)) return inputBorderWarn;
+    return inputBorderNormal;
+  }
 
   // ---- Volume labels for dynamic fields ----
   const volumeLabels: string[] =
@@ -445,10 +424,10 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
   ];
 
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-ds-panel p-6">
+    <form onSubmit={handleSubmit} className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-5 sm:p-6 mb-10">
       {/* ---- Section: Funnel Type ---- */}
       <div className="mb-6">
-        <label className="mb-3 block text-sm font-semibold text-ds-text">
+        <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
           Funnel Type
         </label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -457,11 +436,12 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
               key={cat.id}
               type="button"
               onClick={() => handleCategoryChange(cat.id)}
-              className={`rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
-                selectedCategory === cat.id
-                  ? 'border-ds-blue bg-ds-blue/10 text-ds-text'
-                  : 'border-white/[0.06] bg-ds-bg-alt text-ds-text-secondary hover:border-white/[0.12] hover:text-ds-text'
-              }`}
+              className="rounded-lg px-3 py-2.5 text-xs font-medium text-left transition-colors hover:bg-[#232738] hover:text-[#e8eaf0]"
+              style={{
+                backgroundColor: selectedCategory === cat.id ? '#232738' : 'transparent',
+                color: selectedCategory === cat.id ? '#e8eaf0' : '#8a8fa8',
+                border: `1px solid ${selectedCategory === cat.id ? 'rgba(74, 144, 217, 0.4)' : 'rgba(255,255,255,0.06)'}`,
+              }}
             >
               <span className="mr-1.5">{cat.icon}</span>
               {cat.label}
@@ -473,19 +453,19 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
       {/* ---- B2B SaaS Sub-Mode ---- */}
       {selectedCategory === 'b2b-saas' && (
         <div className="mb-6">
-          <label className="mb-2 block text-xs font-medium text-ds-text-secondary">
+          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
             Sales Motion
           </label>
-          <div className="inline-flex rounded-lg border border-white/[0.06] bg-ds-bg-alt p-0.5">
+          <div className="inline-flex rounded-lg border border-white/[0.06] bg-[#141720] p-0.5">
             {B2B_SAAS_IDS.map((id) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => handleB2bSubModeChange(id)}
+                onClick={() => handleTemplateChange(id)}
                 className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
-                  selectedTemplate === id
-                    ? 'bg-ds-panel-elevated text-ds-text'
-                    : 'text-ds-text-secondary hover:text-ds-text'
+                  inputs.templateId === id
+                    ? 'bg-[#232738] text-[#e8eaf0]'
+                    : 'text-[#8a8fa8] hover:text-[#e8eaf0]'
                 }`}
               >
                 {TEMPLATE_DISPLAY[id].shortName}
@@ -496,25 +476,23 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
       )}
 
       {/* ---- Template description ---- */}
-      <p className="mb-6 text-sm text-ds-text-secondary">
-        {template.description}
-      </p>
+      <p className="text-xs text-[#8a8fa8] mb-6">{template.description}</p>
 
-      {/* ---- Row: Input Mode + Time Period ---- */}
+      {/* ---- Row: Input Mode + Time Period + Traffic Source + Benchmark ---- */}
       <div className="mb-6 flex flex-wrap items-end gap-4">
         {/* Input mode toggle */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-ds-text-secondary">
+          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
             Enter as
           </label>
-          <div className="inline-flex rounded-lg border border-white/[0.06] bg-ds-bg-alt p-0.5">
+          <div className="inline-flex rounded-lg border border-white/[0.06] bg-[#141720] p-0.5">
             <button
               type="button"
               onClick={() => setInputMode('rates')}
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 inputMode === 'rates'
-                  ? 'bg-ds-panel-elevated text-ds-text'
-                  : 'text-ds-text-secondary hover:text-ds-text'
+                  ? 'bg-[#232738] text-[#e8eaf0]'
+                  : 'text-[#8a8fa8] hover:text-[#e8eaf0]'
               }`}
             >
               Conversion Rates
@@ -524,8 +502,8 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
               onClick={() => setInputMode('volumes')}
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 inputMode === 'volumes'
-                  ? 'bg-ds-panel-elevated text-ds-text'
-                  : 'text-ds-text-secondary hover:text-ds-text'
+                  ? 'bg-[#232738] text-[#e8eaf0]'
+                  : 'text-[#8a8fa8] hover:text-[#e8eaf0]'
               }`}
             >
               Stage Volumes
@@ -535,13 +513,13 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
 
         {/* Time period */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-ds-text-secondary">
-            Time Period (optional)
+          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+            Time Period
           </label>
           <select
             value={timePeriod}
             onChange={(e) => setTimePeriod(e.target.value as TimePeriod)}
-            className="rounded-lg border border-white/[0.1] bg-ds-bg-alt px-3 py-2 text-sm text-ds-text outline-none focus:border-ds-blue"
+            className="rounded-lg border border-white/[0.1] bg-[#141720] px-3 py-2 text-sm text-[#e8eaf0] outline-none focus:border-[#4a90d9]"
           >
             <option value="monthly">Monthly</option>
             <option value="weekly">Weekly</option>
@@ -551,13 +529,13 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
 
         {/* Traffic source */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-ds-text-secondary">
-            Traffic Source (optional)
+          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+            Traffic Source
           </label>
           <select
             value={trafficSource}
             onChange={(e) => setTrafficSource(e.target.value as TrafficSource)}
-            className="rounded-lg border border-white/[0.1] bg-ds-bg-alt px-3 py-2 text-sm text-ds-text outline-none focus:border-ds-blue"
+            className="rounded-lg border border-white/[0.1] bg-[#141720] px-3 py-2 text-sm text-[#e8eaf0] outline-none focus:border-[#4a90d9]"
           >
             <option value="">Not specified</option>
             <option value="organic">Organic</option>
@@ -568,20 +546,20 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
 
         {/* Benchmark mode */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-ds-text-secondary">
+          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
             Benchmark Mode
           </label>
-          <div className="rounded-lg border border-white/[0.06] bg-ds-bg-alt px-3 py-2 text-sm text-ds-text-secondary">
+          <div className="rounded-lg border border-white/[0.06] bg-[#141720] px-3 py-2 text-sm text-[#8a8fa8]">
             {benchmarkModeLabel}
           </div>
         </div>
       </div>
 
       {/* ---- Visitors + Revenue per Conversion ---- */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* Visitors */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-6">
+        {/* Monthly Visitors */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-ds-text">
+          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
             {timePeriod === 'weekly'
               ? 'Weekly'
               : timePeriod === 'quarterly'
@@ -592,62 +570,53 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
           <input
             type="text"
             inputMode="numeric"
-            value={visitors}
-            onChange={(e) => setVisitors(e.target.value)}
+            value={visitorsDisplay}
+            onChange={(e) => handleVisitorsChange(e.target.value)}
             onBlur={handleVisitorsBlur}
-            onFocus={(e) => {
-              // Show raw number on focus for easy editing
-              const val = parseNumericInput(e.target.value);
-              if (val > 0) setVisitors(String(Math.round(val)));
+            onFocus={() => {
+              const val = parseNumericInput(visitorsDisplay);
+              if (val > 0) setVisitorsDisplay(String(Math.round(val)));
             }}
-            className={`w-full rounded-lg border bg-ds-bg-alt px-3 py-2.5 font-mono text-sm text-ds-text outline-none transition-colors focus:border-ds-blue ${
-              getError('visitors')
-                ? 'border-ds-red'
-                : 'border-white/[0.1]'
-            }`}
+            className={`${inputBaseClass} ${fieldBorder('visitors')}`}
             placeholder="10,000"
           />
-          {getError('visitors') && (
-            <p className="mt-1 text-xs text-ds-red">{getError('visitors')}</p>
-          )}
-          <p className="mt-1 text-xs text-ds-text-secondary">
-            {TRAFFIC_BOUNDS.min.toLocaleString()} – {TRAFFIC_BOUNDS.max.toLocaleString()}
+          <FieldFeedback
+            error={getFieldError('visitors')}
+            guardrail={getGuardrailHit('visitors')}
+          />
+          <p className="text-[10px] text-[#8a8fa8]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
+            Typical: {TRAFFIC_BOUNDS.min.toLocaleString()} – {TRAFFIC_BOUNDS.max.toLocaleString()}
           </p>
         </div>
 
-        {/* Revenue per conversion */}
+        {/* Revenue per Conversion */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-ds-text">
+          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
             Revenue per Conversion
           </label>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-ds-text-secondary">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8fa8] text-sm">
               $
             </span>
             <input
               type="text"
               inputMode="numeric"
-              value={revenuePerConversion}
-              onChange={(e) => setRevenuePerConversion(e.target.value)}
+              value={revenueDisplay}
+              onChange={(e) => handleRevenueChange(e.target.value)}
               onBlur={handleRevenueBlur}
-              onFocus={(e) => {
-                const val = parseNumericInput(e.target.value);
-                if (val > 0) setRevenuePerConversion(String(Math.round(val)));
+              onFocus={() => {
+                const val = parseNumericInput(revenueDisplay);
+                if (val > 0) setRevenueDisplay(String(Math.round(val)));
               }}
-              className={`w-full rounded-lg border bg-ds-bg-alt py-2.5 pl-7 pr-3 font-mono text-sm text-ds-text outline-none transition-colors focus:border-ds-blue ${
-                getError('revenuePerConversion')
-                  ? 'border-ds-red'
-                  : 'border-white/[0.1]'
-              }`}
+              className={`${inputBaseClass} ${fieldBorder('revenuePerConversion')} pl-7`}
               placeholder="5,000"
             />
           </div>
-          {getError('revenuePerConversion') && (
-            <p className="mt-1 text-xs text-ds-red">
-              {getError('revenuePerConversion')}
-            </p>
-          )}
-          <p className="mt-1 text-xs text-ds-text-secondary">
+          <FieldFeedback
+            error={getFieldError('revenuePerConversion')}
+            guardrail={getGuardrailHit('revenuePerConversion')}
+          />
+          <p className="text-[10px] text-[#8a8fa8]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
             Typical for {template.name}: ${template.revenuePerConversion.floor.toLocaleString()} – ${template.revenuePerConversion.ceiling.toLocaleString()}
           </p>
         </div>
@@ -655,76 +624,66 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
 
       {/* ---- Stage Inputs ---- */}
       <div className="mb-6">
-        <label className="mb-3 block text-sm font-semibold text-ds-text">
+        <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
           {inputMode === 'rates' ? 'Conversion Rates' : 'Stage Volumes'}
         </label>
 
         {inputMode === 'rates' ? (
           /* ---- Rate inputs ---- */
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {template.stages.map((stage) => {
               const guard = template.stageGuardrails[stage.key];
-              const benchmark = template.benchmarkRates[stage.key];
               return (
                 <div key={stage.key}>
-                  <label className="mb-1.5 block text-xs font-medium text-ds-text-secondary">
+                  <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
                     {stage.label}
-                    <span className="ml-2 text-ds-blue">
-                      Benchmark: {benchmark?.toFixed(1)}%
-                    </span>
                   </label>
                   <div className="relative">
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={rates[stage.key] ?? ''}
-                      onChange={(e) =>
-                        handleRateChange(stage.key, e.target.value)
-                      }
+                      value={rateDisplays[stage.key] ?? '0.0'}
+                      onChange={(e) => handleRateChange(stage.key, e.target.value)}
                       onBlur={() => handleRateBlur(stage.key)}
                       onFocus={() => {
-                        // Show raw value on focus
-                        const val = parseFloat(rates[stage.key] ?? '0');
+                        const val = parseFloat(rateDisplays[stage.key] ?? '0');
                         if (!isNaN(val)) {
-                          setRates((prev) => ({
+                          setRateDisplays((prev) => ({
                             ...prev,
                             [stage.key]: String(val),
                           }));
                         }
                       }}
-                      className={`w-full rounded-lg border bg-ds-bg-alt py-2 pl-3 pr-8 font-mono text-sm text-ds-text outline-none transition-colors focus:border-ds-blue ${
-                        getError(stage.key)
-                          ? 'border-ds-red'
-                          : 'border-white/[0.1]'
-                      }`}
+                      className={`${inputBaseClass} ${fieldBorder(stage.key)} pr-7`}
                     />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-sm text-ds-text-secondary">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8fa8] text-sm">
                       %
                     </span>
                   </div>
-                  {getError(stage.key) && (
-                    <p className="mt-1 text-xs text-ds-red">
-                      {getError(stage.key)}
-                    </p>
-                  )}
                   {guard && (
-                    <p className="mt-1 text-xs text-ds-text-secondary">
-                      Plausible: {guard.rateFloor.toFixed(1)}% – {guard.rateCeiling.toFixed(1)}%
-                    </p>
+                    <div className="text-[10px] text-[#8a8fa8]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
+                      Benchmark: {formatPercent(template.benchmarkRates[stage.key] ?? 0)}
+                      {' · '}
+                      Range: {guard.rateFloor.toFixed(1)}–{guard.rateCeiling.toFixed(1)}%
+                    </div>
                   )}
+                  <FieldFeedback
+                    error={getFieldError(stage.key)}
+                    guardrail={getGuardrailHit(stage.key)}
+                  />
                 </div>
               );
             })}
           </div>
         ) : (
           /* ---- Volume inputs ---- */
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
             {volumeLabels.map((label, i) => (
               <div key={label}>
-                <label className="mb-1.5 block text-xs font-medium text-ds-text-secondary">
+                <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
                   {label}
                   {i === 0 && (
-                    <span className="ml-2 text-ds-blue">Top of funnel</span>
+                    <span className="ml-2 text-[#4a90d9]">Top of funnel</span>
                   )}
                 </label>
                 <input
@@ -742,7 +701,7 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
                       }));
                     }
                   }}
-                  className="w-full rounded-lg border border-white/[0.1] bg-ds-bg-alt px-3 py-2 font-mono text-sm text-ds-text outline-none transition-colors focus:border-ds-blue"
+                  className={`${inputBaseClass} ${inputBorderNormal}`}
                 />
               </div>
             ))}
@@ -750,14 +709,37 @@ export default function FunnelForm({ onSubmit, initialInputs }: FunnelFormProps)
         )}
       </div>
 
-      {/* ---- Submit ---- */}
-      <button
-        type="button"
-        onClick={handleSubmit}
-        className="w-full rounded-lg bg-gradient-to-r from-ds-blue to-blue-500 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto"
-      >
-        Analyze Funnel
-      </button>
-    </div>
+      {/* Submit button */}
+      <div className="pt-5 border-t border-white/[0.06]">
+        <button
+          type="submit"
+          disabled={errors.length > 0}
+          className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-40 hover:brightness-110 active:brightness-95"
+          style={{
+            background: 'linear-gradient(135deg, #4a90d9, #3d7bc8)',
+          }}
+        >
+          Analyze Funnel
+        </button>
+      </div>
+    </form>
   );
+}
+
+// ---- Sub-components -------------------------------------------------------
+
+function FieldFeedback({
+  error,
+  guardrail,
+}: {
+  error?: string;
+  guardrail?: GuardrailHit;
+}) {
+  if (error) {
+    return <p className="text-xs text-[#d94a4a] mt-0.5">{error}</p>;
+  }
+  if (guardrail) {
+    return <p className="text-xs text-[#d4a24e] mt-0.5">{guardrail.message}</p>;
+  }
+  return null;
 }
