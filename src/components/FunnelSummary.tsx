@@ -2,7 +2,8 @@
 // FunnelSummary — Horizontal funnel bar showing stage volumes and conversion rates
 // ---------------------------------------------------------------------------
 
-import type { AnalysisResult, FunnelStage } from '@/lib/types';
+import type { AnalysisResult, FunnelInputs, FunnelStage } from '@/lib/types';
+import { getTemplate } from '@/lib/benchmarks';
 import { formatNumber, formatPercent, formatCurrency } from '@/utils/format';
 
 /** Status color map matching CLAUDE.md design system */
@@ -18,18 +19,21 @@ function statusColor(stage: FunnelStage): string {
 
 interface FunnelSummaryProps {
   analysis: AnalysisResult;
+  inputs: FunnelInputs;
 }
 
-export default function FunnelSummary({ analysis }: FunnelSummaryProps) {
-  const { volumes, stages, currentRevenue } = analysis;
+export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) {
+  const { volumes, currentRevenue } = analysis;
+  const template = getTemplate(inputs.templateId);
 
-  // Build a lookup: volume label → stage that feeds into it (for coloring)
-  const stageByToLabel = new Map<string, FunnelStage>();
-  for (const stage of stages) {
-    // The stage label is like "Visitor → Lead", the volume downstream is "Leads"
-    // We match by stage key — volumes[i+1] corresponds to stage[i]
-    stageByToLabel.set(stage.key, stage);
+  // Build a lookup from stage key → analyzed FunnelStage (which may be sorted by revenueAtRisk)
+  const stageByKey = new Map<string, FunnelStage>();
+  for (const stage of analysis.stages) {
+    stageByKey.set(stage.key, stage);
   }
+
+  // Use template.stages for funnel order (not analysis.stages which is sorted by revenue)
+  const orderedStages = template.stages;
 
   return (
     <div className="mb-8">
@@ -40,13 +44,12 @@ export default function FunnelSummary({ analysis }: FunnelSummaryProps) {
       {/* Horizontal flow */}
       <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
         {volumes.map((vol, i) => {
-          // Determine the stage that feeds INTO this volume level
-          // volumes[0] is top-of-funnel (no stage), volumes[i>0] is output of stages[i-1]
-          const feedingStage = i > 0 ? stages.find((_, idx) => idx === i - 1) : null;
+          // volumes[0] is top-of-funnel, volumes[i>0] is output of orderedStages[i-1]
+          const feedingStage = i > 0 ? stageByKey.get(orderedStages[i - 1]?.key) ?? null : null;
           const color = feedingStage ? statusColor(feedingStage) : '#4a90d9';
 
-          // Conversion rate = stage[i] userRate (the rate FROM this volume to the next)
-          const outboundStage = i < stages.length ? stages.find((_, idx) => idx === i) : null;
+          // Outbound stage: orderedStages[i] converts FROM this volume level to the next
+          const outboundStage = i < orderedStages.length ? stageByKey.get(orderedStages[i].key) ?? null : null;
 
           return (
             <div key={vol.label} className="flex items-center">

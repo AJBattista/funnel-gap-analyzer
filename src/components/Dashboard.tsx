@@ -2,13 +2,10 @@
 
 // ---------------------------------------------------------------------------
 // Dashboard — Container for all output sections
-// Uses placeholder data from the B2B SaaS Lead-Gen template defaults
+// Receives real AnalysisResult and FunnelInputs from the page
 // ---------------------------------------------------------------------------
 
-import { useMemo } from 'react';
 import type { AnalysisResult, FunnelInputs } from '@/lib/types';
-import { getDefaultInputs } from '@/lib/benchmarks';
-import { analyzeFunnel } from '@/lib/engine';
 import { formatCurrency } from '@/utils/format';
 
 import FunnelSummary from './FunnelSummary';
@@ -17,30 +14,17 @@ import PriorityCard from './PriorityCard';
 import ScenarioSlider from './ScenarioSlider';
 
 interface DashboardProps {
-  analysis?: AnalysisResult | null;
-  inputs?: FunnelInputs | null;
+  analysis: AnalysisResult;
+  inputs: FunnelInputs;
 }
 
-export default function Dashboard({
-  analysis: analysisProp,
-  inputs: inputsProp,
-}: DashboardProps) {
-  // If no data is provided, use placeholder data from B2B SaaS Lead-Gen defaults
-  const { analysis, inputs } = useMemo(() => {
-    if (analysisProp && inputsProp) {
-      return { analysis: analysisProp, inputs: inputsProp };
-    }
-    const defaultInputs = getDefaultInputs('b2b-saas-leadgen');
-    const defaultAnalysis = analyzeFunnel(defaultInputs);
-    return { analysis: defaultAnalysis, inputs: defaultInputs };
-  }, [analysisProp, inputsProp]);
-
+export default function Dashboard({ analysis, inputs }: DashboardProps) {
   const hasLeaks = analysis.largestLeak !== null;
 
   return (
     <div className="w-full">
       {/* Section: Funnel Overview */}
-      <FunnelSummary analysis={analysis} />
+      <FunnelSummary analysis={analysis} inputs={inputs} />
 
       {/* Section: Priority Recommendation + Rankings + Confidence */}
       <PriorityCard analysis={analysis} inputs={inputs} />

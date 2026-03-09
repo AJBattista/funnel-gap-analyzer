@@ -3,21 +3,43 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg-page: #0f1117;
+  --color-bg-alt: #141720;
+  --color-bg-card: #1c1f2e;
+  --color-bg-elevated: #232738;
+  --color-text-primary: #e8eaf0;
+  --color-text-secondary: #8a8fa8;
+  --color-benchmark: #4a90d9;
+  --color-on-track: #3daa8c;
+  --color-warning: #d4a24e;
+  --color-critical: #d94a4a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+/* Range slider thumb styling */
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3daa8c;
+  cursor: pointer;
+  border: 2px solid #232738;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3daa8c;
+  cursor: pointer;
+  border: 2px solid #232738;
 }
 
 @layer utilities {

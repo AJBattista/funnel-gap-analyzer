@@ -4,7 +4,7 @@
 // ScenarioSlider — Pick a stage + improvement type, see Projected Revenue Recovery
 // ---------------------------------------------------------------------------
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { AnalysisResult, FunnelInputs, ScenarioResult } from '@/lib/types';
 import { calculateScenario } from '@/lib/scenarios';
 import { getTemplate } from '@/lib/benchmarks';
@@ -25,6 +25,20 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
   const [selectedKey, setSelectedKey] = useState<string>(
     leakingStages.length > 0 ? leakingStages[0].key : '',
   );
+
+  // Reset selection when template or analysis changes
+  useEffect(() => {
+    const firstLeaking = leakingStages.length > 0 ? leakingStages[0] : null;
+    if (firstLeaking) {
+      setSelectedKey(firstLeaking.key);
+      const g = template.stageGuardrails[firstLeaking.key];
+      const mx = g ? Math.min(100, g.rateCeiling) : 100;
+      setAdjustedRate(Math.min(firstLeaking.benchmarkRate, mx));
+    } else {
+      setSelectedKey('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputs.templateId, analysis]);
 
   // Adjusted rate for the selected stage
   const selectedStage = analysis.stages.find((s) => s.key === selectedKey);
