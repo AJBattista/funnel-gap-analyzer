@@ -171,13 +171,82 @@ export interface AnalysisResult {
   confidenceFlags: ConfidenceFlag[];
 }
 
+// ---- Scenario types -------------------------------------------------------
+
+/** Bounded scenario types — no free-form or doubling scenarios. */
+export type ScenarioType =
+  | 'raise-1pp'
+  | 'raise-3pp'
+  | 'raise-5pp'
+  | 'raise-to-benchmark'
+  | 'raise-to-top-quartile';
+
+/** Human-readable labels for each scenario type. */
+export const SCENARIO_LABELS: Record<ScenarioType, string> = {
+  'raise-1pp': '+1 pp',
+  'raise-3pp': '+3 pp',
+  'raise-5pp': '+5 pp',
+  'raise-to-benchmark': 'Raise to Benchmark',
+  'raise-to-top-quartile': 'Raise to Top Quartile',
+} as const;
+
+/** A single computed scenario option for one stage. */
+export interface ScenarioOption {
+  type: ScenarioType;
+  label: string;
+  /** The rate after the lift is applied (clamped to ceiling/100). */
+  targetRate: number;
+  /** Percentage points of improvement. */
+  liftPp: number;
+  /**
+   * ScenarioLiftRevenue =
+   *   CurrentStageVolume × (LiftInRate / 100) × DownstreamYield × ValuePerConversion
+   */
+  liftRevenue: number;
+}
+
 // ---- Scenario results -----------------------------------------------------
 
-/** Output of a what-if scenario adjustment. */
+/** Output of a what-if scenario adjustment (used by scenario slider UI). */
 export interface ScenarioResult {
   stageKey: string;
   adjustedRate: number;
   newRevenue: number;
   revenueDelta: number;
   newVolumes: VolumeEntry[];
+}
+
+// ---- Priority ranking -----------------------------------------------------
+
+/** A stage ranked by recoverable revenue with confidence assessment. */
+export interface PriorityRanking {
+  stageKey: string;
+  label: string;
+  /** 1 = highest priority. */
+  rank: number;
+  /** Recoverable revenue after guardrails. */
+  recoverableRevenue: number;
+  /** Raw benchmark gap in percentage points. */
+  benchmarkGapPp: number;
+  /** Confidence level for this stage's diagnosis. */
+  confidenceLevel: ConfidenceLevel;
+  isLargestLeak: boolean;
+  isBestNextFix: boolean;
+  /** Best bounded scenario for this stage. */
+  bestScenario: ScenarioOption | null;
+}
+
+// ---- Diagnosis confidence -------------------------------------------------
+
+/** Overall confidence label for display. */
+export type ConfidenceLabel =
+  | 'High Confidence'
+  | 'Moderate Confidence'
+  | 'Low Confidence';
+
+/** Aggregated confidence assessment for the entire diagnosis. */
+export interface DiagnosisConfidence {
+  overall: ConfidenceLevel;
+  overallLabel: ConfidenceLabel;
+  flags: ConfidenceFlag[];
 }
