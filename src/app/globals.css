@@ -51,6 +51,16 @@ input[type='range']::-moz-range-thumb {
   border: 2px solid #232738;
 }
 
+/* Hide number input spinner arrows */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 /* Smooth transitions for interactive elements */
 button,
 input {
