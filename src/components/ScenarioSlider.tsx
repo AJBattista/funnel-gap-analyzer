@@ -77,11 +77,11 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
       : 0;
 
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-5">
-      <h3 className="text-sm font-semibold text-[#e8eaf0] mb-4">
+    <div className="rounded-lg border border-[#D8D2CA] bg-white p-5">
+      <h3 className="text-sm font-semibold text-[#1F1F1F] mb-4">
         Scenario Explorer
       </h3>
-      <p className="text-xs text-[#8a8fa8] mb-4">
+      <p className="text-xs text-[#7A7A7A] mb-4">
         Pick a stage and adjust the conversion rate to see Projected Revenue Recovery.
       </p>
 
@@ -93,11 +93,11 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
             <button
               key={stage.key}
               onClick={() => handleStageChange(stage.key)}
-              className="px-3 py-1.5 rounded text-xs font-medium transition-colors hover:bg-[#232738] hover:text-[#e8eaf0]"
+              className="px-3 py-1.5 rounded text-xs font-medium transition-colors hover:bg-[#F7F5F2] hover:text-[#1F1F1F]"
               style={{
-                backgroundColor: isSelected ? '#232738' : 'transparent',
-                color: isSelected ? '#e8eaf0' : '#8a8fa8',
-                border: `1px solid ${isSelected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)'}`,
+                backgroundColor: isSelected ? '#F7F5F2' : 'transparent',
+                color: isSelected ? '#1F1F1F' : '#7A7A7A',
+                border: `1px solid ${isSelected ? '#C4BDB4' : '#D8D2CA'}`,
               }}
             >
               {stage.label}
@@ -111,26 +111,26 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
           {/* Current and target rates */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-[#8a8fa8] mb-0.5">
+              <div className="text-[10px] uppercase tracking-wide text-[#7A7A7A] mb-0.5">
                 Current Rate
               </div>
-              <div className="text-base font-semibold font-[family-name:var(--font-geist-mono)] text-[#d4a24e]">
+              <div className="text-base font-semibold font-[family-name:var(--font-geist-mono)] text-[#B8862D]">
                 {formatPercent(minRate)}
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-[#8a8fa8] mb-0.5">
+              <div className="text-[10px] uppercase tracking-wide text-[#7A7A7A] mb-0.5">
                 Target Rate
               </div>
-              <div className="text-base font-semibold font-[family-name:var(--font-geist-mono)] text-[#3daa8c]">
+              <div className="text-base font-semibold font-[family-name:var(--font-geist-mono)] text-[#3D7A5C]">
                 {formatPercent(adjustedRate)}
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-[#8a8fa8] mb-0.5">
+              <div className="text-[10px] uppercase tracking-wide text-[#7A7A7A] mb-0.5">
                 Benchmark
               </div>
-              <div className="text-base font-semibold font-[family-name:var(--font-geist-mono)] text-[#4a90d9]">
+              <div className="text-base font-semibold font-[family-name:var(--font-geist-mono)] text-[#5B7A94]">
                 {formatPercent(benchmarkRate)}
               </div>
             </div>
@@ -144,10 +144,10 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
                 className="absolute top-0 -translate-x-1/2 flex flex-col items-center"
                 style={{ left: `${benchmarkPosition}%` }}
               >
-                <div className="text-[9px] text-[#4a90d9] font-[family-name:var(--font-geist-mono)] whitespace-nowrap">
+                <div className="text-[9px] text-[#5B7A94] font-[family-name:var(--font-geist-mono)] whitespace-nowrap">
                   Benchmark
                 </div>
-                <div className="w-px h-2 bg-[#4a90d9]" />
+                <div className="w-px h-2 bg-[#5B7A94]" />
               </div>
             )}
 
@@ -160,26 +160,26 @@ export default function ScenarioSlider({ analysis, inputs }: ScenarioSliderProps
               onChange={(e) => setAdjustedRate(parseFloat(e.target.value))}
               className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(to right, #3daa8c ${
+                background: `linear-gradient(to right, #3D7A5C ${
                   sliderRange > 0
                     ? ((adjustedRate - minRate) / sliderRange) * 100
                     : 0
-                }%, #232738 0%)`,
+                }%, #D8D2CA 0%)`,
               }}
             />
           </div>
 
           {/* Revenue delta result */}
           {scenario && scenario.revenueDelta > 0 && (
-            <div className="rounded-lg bg-[#232738] p-4 mt-2">
-              <div className="text-[10px] uppercase tracking-wide text-[#8a8fa8] mb-1">
+            <div className="rounded-lg bg-[#F7F5F2] p-4 mt-2">
+              <div className="text-[10px] uppercase tracking-wide text-[#7A7A7A] mb-1">
                 Projected Revenue Recovery
               </div>
-              <div className="text-2xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#3daa8c]">
+              <div className="text-2xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#3D7A5C]">
                 +{formatCurrency(scenario.revenueDelta)}
-                <span className="text-sm text-[#8a8fa8] font-normal">/mo</span>
+                <span className="text-sm text-[#7A7A7A] font-normal">/mo</span>
               </div>
-              <div className="text-xs text-[#8a8fa8] mt-1">
+              <div className="text-xs text-[#7A7A7A] mt-1">
                 New monthly revenue: {formatCurrency(scenario.newRevenue)}
               </div>
             </div>

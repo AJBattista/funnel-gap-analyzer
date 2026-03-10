@@ -31,7 +31,7 @@ export default function Dashboard({ analysis, inputs }: DashboardProps) {
 
       {/* Section: Benchmark Delta by Stage */}
       <div>
-        <h2 className="text-lg font-semibold text-[#e8eaf0] mb-4">
+        <h2 className="text-lg font-semibold text-[#1F1F1F] mb-4">
           Benchmark Delta by Stage
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -69,17 +69,17 @@ function RevenueAtRiskRanking({ analysis }: { analysis: AnalysisResult }) {
   const maxRevenue = leaking[0].revenueAtRisk; // already sorted desc
 
   const statusColor = (status: string) => {
-    if (status === 'critical') return '#d94a4a';
-    if (status === 'warning') return '#d4a24e';
-    return '#3daa8c';
+    if (status === 'critical') return '#9E2F2F';
+    if (status === 'warning') return '#B8862D';
+    return '#3D7A5C';
   };
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-[#e8eaf0] mb-4">
+      <h2 className="text-lg font-semibold text-[#1F1F1F] mb-4">
         Revenue at Risk by Stage
       </h2>
-      <div className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-5 space-y-4">
+      <div className="rounded-lg border border-[#D8D2CA] bg-white p-5 space-y-4">
         {leaking.map((stage) => {
           const widthPct =
             maxRevenue > 0
@@ -90,7 +90,7 @@ function RevenueAtRiskRanking({ analysis }: { analysis: AnalysisResult }) {
           return (
             <div key={stage.key}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-[#e8eaf0]">{stage.label}</span>
+                <span className="text-sm text-[#1F1F1F]">{stage.label}</span>
                 <span
                   className="text-sm font-semibold font-[family-name:var(--font-geist-mono)]"
                   style={{ color }}
@@ -98,7 +98,7 @@ function RevenueAtRiskRanking({ analysis }: { analysis: AnalysisResult }) {
                   {formatCurrency(stage.revenueAtRisk)}/mo
                 </span>
               </div>
-              <div className="w-full h-2 rounded-full bg-[#232738]">
+              <div className="w-full h-2 rounded-full bg-[#F7F5F2]">
                 <div
                   className="h-2 rounded-full transition-all duration-300"
                   style={{
@@ -114,4 +114,3 @@ function RevenueAtRiskRanking({ analysis }: { analysis: AnalysisResult }) {
     </div>
   );
 }
-

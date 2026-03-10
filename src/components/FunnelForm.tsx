@@ -397,10 +397,10 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
   }
 
   const inputBaseClass =
-    'w-full bg-[#141720] border rounded-lg px-3 py-3 text-sm text-[#e8eaf0] font-[family-name:var(--font-geist-mono)] outline-none transition-colors focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]/30 min-h-[44px]';
-  const inputBorderNormal = 'border-white/[0.1]';
-  const inputBorderError = 'border-[#d94a4a]';
-  const inputBorderWarn = 'border-[#d4a24e]';
+    'w-full bg-[#F7F5F2] border rounded-lg px-3 py-3 text-sm text-[#1F1F1F] font-[family-name:var(--font-geist-mono)] outline-none transition-colors focus:border-[#5B7A94] focus:ring-1 focus:ring-[#5B7A94]/30 min-h-[44px]';
+  const inputBorderNormal = 'border-[#D8D2CA]';
+  const inputBorderError = 'border-[#9E2F2F]';
+  const inputBorderWarn = 'border-[#B8862D]';
 
   function fieldBorder(field: string): string {
     if (getFieldError(field)) return inputBorderError;
@@ -428,10 +428,10 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] p-5 sm:p-6 mb-10">
+    <form onSubmit={handleSubmit} className="rounded-lg border border-[#D8D2CA] bg-white p-5 sm:p-6 mb-10">
       {/* ---- Section: Funnel Type ---- */}
       <div className="mb-6">
-        <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+        <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-2">
           Funnel Type
         </label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -440,11 +440,11 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
               key={cat.id}
               type="button"
               onClick={() => handleCategoryChange(cat.id)}
-              className="rounded-lg px-3 py-2.5 text-xs font-medium text-left transition-colors hover:bg-[#232738] hover:text-[#e8eaf0]"
+              className="rounded-lg px-3 py-2.5 text-xs font-medium text-left transition-colors hover:bg-[#F7F5F2] hover:text-[#1F1F1F]"
               style={{
-                backgroundColor: selectedCategory === cat.id ? '#232738' : 'transparent',
-                color: selectedCategory === cat.id ? '#e8eaf0' : '#8a8fa8',
-                border: `1px solid ${selectedCategory === cat.id ? 'rgba(74, 144, 217, 0.4)' : 'rgba(255,255,255,0.06)'}`,
+                backgroundColor: selectedCategory === cat.id ? '#F7F5F2' : 'transparent',
+                color: selectedCategory === cat.id ? '#1F1F1F' : '#7A7A7A',
+                border: `1px solid ${selectedCategory === cat.id ? '#5B7A94' : '#D8D2CA'}`,
               }}
             >
               <span className="mr-1.5">{cat.icon}</span>
@@ -457,10 +457,10 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
       {/* ---- B2B SaaS Sub-Mode ---- */}
       {selectedCategory === 'b2b-saas' && (
         <div className="mb-6">
-          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+          <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-2">
             Sales Motion
           </label>
-          <div className="inline-flex rounded-lg border border-white/[0.06] bg-[#141720] p-0.5">
+          <div className="inline-flex rounded-lg border border-[#D8D2CA] bg-[#F7F5F2] p-0.5">
             {B2B_SAAS_IDS.map((id) => (
               <button
                 key={id}
@@ -468,8 +468,8 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
                 onClick={() => handleTemplateChange(id)}
                 className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
                   inputs.templateId === id
-                    ? 'bg-[#232738] text-[#e8eaf0]'
-                    : 'text-[#8a8fa8] hover:text-[#e8eaf0]'
+                    ? 'bg-white text-[#1F1F1F]'
+                    : 'text-[#7A7A7A] hover:text-[#1F1F1F]'
                 }`}
               >
                 {TEMPLATE_DISPLAY[id].shortName}
@@ -480,23 +480,23 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
       )}
 
       {/* ---- Template description ---- */}
-      <p className="text-xs text-[#8a8fa8] mb-6">{template.description}</p>
+      <p className="text-xs text-[#7A7A7A] mb-6">{template.description}</p>
 
       {/* ---- Row: Input Mode + Time Period + Traffic Source + Benchmark ---- */}
       <div className="mb-6 flex flex-wrap items-end gap-4">
         {/* Input mode toggle */}
         <div>
-          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+          <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-2">
             Enter as
           </label>
-          <div className="inline-flex rounded-lg border border-white/[0.06] bg-[#141720] p-0.5">
+          <div className="inline-flex rounded-lg border border-[#D8D2CA] bg-[#F7F5F2] p-0.5">
             <button
               type="button"
               onClick={() => setInputMode('rates')}
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 inputMode === 'rates'
-                  ? 'bg-[#232738] text-[#e8eaf0]'
-                  : 'text-[#8a8fa8] hover:text-[#e8eaf0]'
+                  ? 'bg-white text-[#1F1F1F]'
+                  : 'text-[#7A7A7A] hover:text-[#1F1F1F]'
               }`}
             >
               Conversion Rates
@@ -506,8 +506,8 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
               onClick={() => setInputMode('volumes')}
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 inputMode === 'volumes'
-                  ? 'bg-[#232738] text-[#e8eaf0]'
-                  : 'text-[#8a8fa8] hover:text-[#e8eaf0]'
+                  ? 'bg-white text-[#1F1F1F]'
+                  : 'text-[#7A7A7A] hover:text-[#1F1F1F]'
               }`}
             >
               Stage Volumes
@@ -517,13 +517,13 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
 
         {/* Time period */}
         <div>
-          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+          <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-2">
             Time Period
           </label>
           <select
             value={timePeriod}
             onChange={(e) => setTimePeriod(e.target.value as TimePeriod)}
-            className="rounded-lg border border-white/[0.1] bg-[#141720] px-3 py-2 text-sm text-[#e8eaf0] outline-none focus:border-[#4a90d9]"
+            className="rounded-lg border border-[#D8D2CA] bg-[#F7F5F2] px-3 py-2 text-sm text-[#1F1F1F] outline-none focus:border-[#5B7A94]"
           >
             <option value="monthly">Monthly</option>
             <option value="weekly">Weekly</option>
@@ -533,13 +533,13 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
 
         {/* Traffic source */}
         <div>
-          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+          <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-2">
             Traffic Source
           </label>
           <select
             value={trafficSource}
             onChange={(e) => setTrafficSource(e.target.value as TrafficSource)}
-            className="rounded-lg border border-white/[0.1] bg-[#141720] px-3 py-2 text-sm text-[#e8eaf0] outline-none focus:border-[#4a90d9]"
+            className="rounded-lg border border-[#D8D2CA] bg-[#F7F5F2] px-3 py-2 text-sm text-[#1F1F1F] outline-none focus:border-[#5B7A94]"
           >
             <option value="">Not specified</option>
             <option value="organic">Organic</option>
@@ -550,10 +550,10 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
 
         {/* Benchmark mode */}
         <div>
-          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+          <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-2">
             Benchmark Mode
           </label>
-          <div className="rounded-lg border border-white/[0.06] bg-[#141720] px-3 py-2 text-sm text-[#8a8fa8]">
+          <div className="rounded-lg border border-[#D8D2CA] bg-[#F7F5F2] px-3 py-2 text-sm text-[#7A7A7A]">
             {benchmarkModeLabel}
           </div>
         </div>
@@ -563,7 +563,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-6">
         {/* Monthly Visitors */}
         <div>
-          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
+          <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-1">
             {timePeriod === 'weekly'
               ? 'Weekly'
               : timePeriod === 'quarterly'
@@ -588,18 +588,18 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
             error={getFieldError('visitors')}
             guardrail={getGuardrailHit('visitors')}
           />
-          <p className="text-[10px] text-[#8a8fa8]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
+          <p className="text-[10px] text-[#7A7A7A]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
             Typical: {TRAFFIC_BOUNDS.min.toLocaleString()} – {TRAFFIC_BOUNDS.max.toLocaleString()}
           </p>
         </div>
 
         {/* Revenue per Conversion */}
         <div>
-          <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
+          <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-1">
             Revenue per Conversion
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a8fa8] text-sm">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A7A7A] text-sm">
               $
             </span>
             <input
@@ -620,7 +620,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
             error={getFieldError('revenuePerConversion')}
             guardrail={getGuardrailHit('revenuePerConversion')}
           />
-          <p className="text-[10px] text-[#8a8fa8]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
+          <p className="text-[10px] text-[#7A7A7A]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
             Typical for {template.name}: ${template.revenuePerConversion.floor.toLocaleString()} – ${template.revenuePerConversion.ceiling.toLocaleString()}
           </p>
         </div>
@@ -628,7 +628,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
 
       {/* ---- Stage Inputs ---- */}
       <div className="mb-6">
-        <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-2">
+        <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-2">
           {inputMode === 'rates' ? 'Conversion Rates' : 'Stage Volumes'}
         </label>
 
@@ -639,7 +639,7 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
               const guard = template.stageGuardrails[stage.key];
               return (
                 <div key={stage.key}>
-                  <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
+                  <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-1">
                     {stage.label}
                   </label>
                   <div className="relative">
@@ -658,12 +658,12 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
                       }}
                       className={`${inputBaseClass} ${fieldBorder(stage.key)} pr-7`}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8a8fa8] text-sm">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7A7A7A] text-sm">
                       %
                     </span>
                   </div>
                   {guard && (
-                    <div className="text-[10px] text-[#8a8fa8]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
+                    <div className="text-[10px] text-[#7A7A7A]/60 mt-0.5 font-[family-name:var(--font-geist-mono)]">
                       Benchmark: {formatPercent(template.benchmarkRates[stage.key] ?? 0)}
                       {' · '}
                       Range: {guard.rateFloor.toFixed(1)}–{guard.rateCeiling.toFixed(1)}%
@@ -682,10 +682,10 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
             {volumeLabels.map((label, i) => (
               <div key={label}>
-                <label className="block text-xs uppercase tracking-wide text-[#8a8fa8] font-semibold mb-1">
+                <label className="block text-xs uppercase tracking-wide text-[#7A7A7A] font-semibold mb-1">
                   {label}
                   {i === 0 && (
-                    <span className="ml-2 text-[#4a90d9]">Top of funnel</span>
+                    <span className="ml-2 text-[#5B7A94]">Top of funnel</span>
                   )}
                 </label>
                 <input
@@ -710,14 +710,11 @@ export default function FunnelForm({ inputs, onSubmit, onChange }: FunnelFormPro
       </div>
 
       {/* Submit button */}
-      <div className="pt-5 border-t border-white/[0.06]">
+      <div className="pt-5 border-t border-[#D8D2CA]">
         <button
           type="submit"
           disabled={errors.length > 0}
-          className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-40 hover:brightness-110 active:brightness-95"
-          style={{
-            background: 'linear-gradient(135deg, #4a90d9, #3d7bc8)',
-          }}
+          className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#9E2F2F] disabled:opacity-40 hover:brightness-110 active:brightness-95"
         >
           Analyze Funnel
         </button>
@@ -736,10 +733,10 @@ function FieldFeedback({
   guardrail?: GuardrailHit;
 }) {
   if (error) {
-    return <p className="text-xs text-[#d94a4a] mt-0.5">{error}</p>;
+    return <p className="text-xs text-[#9E2F2F] mt-0.5">{error}</p>;
   }
   if (guardrail) {
-    return <p className="text-xs text-[#d4a24e] mt-0.5">{guardrail.message}</p>;
+    return <p className="text-xs text-[#B8862D] mt-0.5">{guardrail.message}</p>;
   }
   return null;
 }

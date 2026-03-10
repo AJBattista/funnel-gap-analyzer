@@ -6,15 +6,15 @@ import type { AnalysisResult, FunnelInputs, FunnelStage } from '@/lib/types';
 import { getTemplate } from '@/lib/benchmarks';
 import { formatNumber, formatPercent, formatCurrency } from '@/utils/format';
 
-/** Status color map matching CLAUDE.md design system */
+/** Status color map matching Executive Neutral design system */
 const STATUS_COLORS: Record<string, string> = {
-  'on-track': '#3daa8c',
-  warning: '#d4a24e',
-  critical: '#d94a4a',
+  'on-track': '#3D7A5C',
+  warning: '#B8862D',
+  critical: '#9E2F2F',
 };
 
 function statusColor(stage: FunnelStage): string {
-  return STATUS_COLORS[stage.status] ?? '#8a8fa8';
+  return STATUS_COLORS[stage.status] ?? '#7A7A7A';
 }
 
 interface FunnelSummaryProps {
@@ -37,7 +37,7 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-[#e8eaf0] mb-4">
+      <h2 className="text-lg font-semibold text-[#1F1F1F] mb-4">
         Funnel Overview
       </h2>
 
@@ -51,10 +51,10 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
             <div key={vol.label} className="flex items-center">
               {/* Stage block */}
               <div
-                className="rounded-lg border border-white/[0.06] bg-[#1c1f2e] px-4 py-3 min-w-[120px] text-center"
+                className="rounded-lg border border-[#D8D2CA] bg-white px-4 py-3 min-w-[120px] text-center"
               >
-                <div className="text-xs text-[#8a8fa8] mb-1">{vol.label}</div>
-                <div className="text-xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#e8eaf0]">
+                <div className="text-xs text-[#7A7A7A] mb-1">{vol.label}</div>
+                <div className="text-xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#1F1F1F]">
                   {formatNumber(vol.value)}
                 </div>
                 {outboundStage && (
@@ -71,7 +71,7 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
 
               {/* Arrow connector */}
               {i < volumes.length - 1 && (
-                <div className="flex items-center px-1 text-[#8a8fa8]">
+                <div className="flex items-center px-1 text-[#B0A99F]">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M4 10h12m0 0l-4-4m4 4l-4 4"
@@ -89,7 +89,7 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
 
         {/* Revenue block */}
         <div className="flex items-center">
-          <div className="flex items-center px-1 text-[#8a8fa8]">
+          <div className="flex items-center px-1 text-[#B0A99F]">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path
                 d="M4 10h12m0 0l-4-4m4 4l-4 4"
@@ -100,12 +100,12 @@ export default function FunnelSummary({ analysis, inputs }: FunnelSummaryProps) 
               />
             </svg>
           </div>
-          <div className="rounded-lg border border-white/[0.06] bg-[#232738] px-4 py-3 min-w-[120px] text-center">
-            <div className="text-xs text-[#8a8fa8] mb-1">Revenue</div>
-            <div className="text-xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#e8eaf0]">
+          <div className="rounded-lg border border-[#D8D2CA] bg-[#F7F5F2] px-4 py-3 min-w-[120px] text-center">
+            <div className="text-xs text-[#7A7A7A] mb-1">Revenue</div>
+            <div className="text-xl font-semibold font-[family-name:var(--font-geist-mono)] text-[#1F1F1F]">
               {formatCurrency(currentRevenue)}
             </div>
-            <div className="text-xs text-[#8a8fa8] mt-1">per month</div>
+            <div className="text-xs text-[#7A7A7A] mt-1">per month</div>
           </div>
         </div>
       </div>
