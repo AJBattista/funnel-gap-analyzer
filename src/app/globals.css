@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --color-bg-page: #0f1117;
-  --color-bg-alt: #141720;
-  --color-bg-card: #1c1f2e;
-  --color-bg-elevated: #232738;
-  --color-text-primary: #e8eaf0;
-  --color-text-secondary: #8a8fa8;
-  --color-benchmark: #4a90d9;
-  --color-on-track: #3daa8c;
-  --color-warning: #d4a24e;
-  --color-critical: #d94a4a;
+  --color-bg-page: #ECE8E2;
+  --color-bg-alt: #F7F5F2;
+  --color-bg-card: #FFFFFF;
+  --color-bg-elevated: #F7F5F2;
+  --color-text-primary: #1F1F1F;
+  --color-text-secondary: #7A7A7A;
+  --color-benchmark: #5B7A94;
+  --color-on-track: #3D7A5C;
+  --color-warning: #B8862D;
+  --color-critical: #9E2F2F;
 }
 
 html,
@@ -26,8 +26,8 @@ body {
 
 /* Selection styling */
 ::selection {
-  background: rgba(74, 144, 217, 0.3);
-  color: #e8eaf0;
+  background: rgba(158, 47, 47, 0.15);
+  color: #1F1F1F;
 }
 
 /* Range slider thumb styling */
@@ -37,18 +37,18 @@ input[type='range']::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #3daa8c;
+  background: #9E2F2F;
   cursor: pointer;
-  border: 2px solid #232738;
+  border: 2px solid #ECE8E2;
 }
 
 input[type='range']::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #3daa8c;
+  background: #9E2F2F;
   cursor: pointer;
-  border: 2px solid #232738;
+  border: 2px solid #ECE8E2;
 }
 
 /* Hide number input spinner arrows */
